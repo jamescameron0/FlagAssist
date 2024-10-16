@@ -53,12 +53,18 @@ flagsAndLinks, missingCountry = get_country_flags()
  
 #print("Num of countries:", len(flagsAndLinks)) #to check all countries present
 
+
 #CREATING THE GUI USING TKINTER
 
+correct_country_name = ""
+
 def display_random_flag():
-    
+
+    global correct_country_name, submission_locked
+
     country_name = random.choice(list(flagsAndLinks.keys()))    # picking random country and getting its URL
     flag_url = flagsAndLinks[country_name]
+    correct_country_name = country_name
 
     response = requests.get(flag_url)  # fetching the image from the URL
     
@@ -68,22 +74,68 @@ def display_random_flag():
 
     flag_label.config(image=img_tk)
     flag_label.image = img_tk  # Keep a reference to avoid garbage collection
-    country_label.config(text=country_name)
+    
+    entry_box.grid(row=2, pady=10)
+    submit_button.grid(row=3, pady=10)
+
+    next_flag_button.grid_remove() # Hide the "Next Flag" button
+
+    country_label.config(text="")
+    
+    submission_locked = False #to prevent enter key from being spammed
+
+def submit_answer():
+
+    global submission_locked
+
+    if submission_locked:
+        return  # Ignore further submissions if already submitted to prevent spamming
+
+    user_text = entry_box.get().strip() # Retrieve the user's answer from the entry box
+
+    if user_text.lower() == correct_country_name.lower():
+        country_label.config(text=f"Correct! The country is {correct_country_name}")
+    else:
+        country_label.config(text=f"Incorrect. The country was {correct_country_name}")
+
+    entry_box.delete(0, tk.END)
+
+    submission_locked = True
+
+    entry_box.grid_remove()
+    submit_button.grid_remove()
+
+    next_flag_button.grid(row=4, pady=20)
+
+def on_enter_key(event):
+    submit_answer()
+
+def on_space_key(event):
+    display_random_flag()  # Call display_random_flag when space is pressed
+
 
 # Set up the main application window
 root = tk.Tk()
-root.title("Random Country Flag")
+root.title("Country Flag Quiz")
 
 # Create labels for flag and country name
-flag_label = tk.Label(root)
-flag_label.pack(pady=20)
+flag_label = tk.Label(root, font=("Helvetica", 16), text="Press 'Show Flag' to start")
+flag_label.grid(row=0, pady=20)
 
 country_label = tk.Label(root, font=("Helvetica", 16))
-country_label.pack(pady=20)
+country_label.grid(row=1, pady=20)
 
-# Button to show a random flag
-show_button = tk.Button(root, text="Show Random Flag", command=display_random_flag)
-show_button.pack(pady=20)
+# Entry box for user's answer
+entry_box = tk.Entry(root, font=("Helvetica", 16), width=30)
 
-# Start the GUI event loop
-root.mainloop()
+entry_box.bind("<Return>", on_enter_key) 
+
+submit_button = tk.Button(root, text="Submit Answer, (enter)", command=submit_answer, font=("Helvetica", 14))
+
+next_flag_button = tk.Button(root, text="Show Next Flag, (space bar)", command=display_random_flag, font=("Helvetica", 14))
+
+next_flag_button.bind("<space>", on_space_key)
+
+display_random_flag() #display flag when launched
+
+root.mainloop() 
